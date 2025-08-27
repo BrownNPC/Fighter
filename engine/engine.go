@@ -42,6 +42,7 @@ func Run(scenes Scenes, cfg Config) error {
 	// --------------BEGIN--------------
 	rl.SetConfigFlags(rl.FlagWindowResizable)
 	rl.InitWindow(0, 0, cfg.WindowTitle)
+	rl.SetExitKey(rl.KeyNumLock)
 	rl.InitAudioDevice()
 	rl.SetTargetFPS(60)
 	defer rl.CloseWindow() // de-initialization
