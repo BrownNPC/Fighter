@@ -2,12 +2,12 @@ package scenes
 
 import (
 	"GameFrameworkTM/engine"
-	"GameFrameworkTM/scenes/cube"
+	"GameFrameworkTM/scenes/stage"
 	"GameFrameworkTM/scenes/start"
 )
 
 // register all your scenes in here
 var Registered = engine.Scenes{
 	"start": &start.Scene{},
-	"cube": &cube.Scene{},
+	"stage": &stage.Scene{},
 }

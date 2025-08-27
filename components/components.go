@@ -1,4 +1,4 @@
-package components
+package c
 
 import (
 	"image/color"
