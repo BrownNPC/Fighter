@@ -3,6 +3,7 @@ package engine
 import (
 	"errors"
 	"fmt"
+	"io/fs"
 
 	rl "github.com/gen2brain/raylib-go/raylib"
 )
@@ -10,14 +11,14 @@ import (
 // config is passed to the Run function in main.go
 type Config struct {
 	//for implementing letterboxing (black bars) see:https://www.raylib.com/examples/core/loader.html?name=core_window_letterbox
-	// VirtualWidth, VirtualHeight int
 	WindowTitle string
+	Assets      fs.FS
 }
 
 // info to pass to scenes
 // eg. a camera, game map, or save file
 type Context struct {
-	SomeData any
+	Assets fs.FS
 }
 
 // a scene must implement these methods
@@ -33,7 +34,7 @@ type Scenes map[string]scene
 func Run(scenes Scenes, cfg Config) error {
 	ActiveSceneId := "start" // look for a scene named start as entry-point
 	ActiveScene, ok := scenes[ActiveSceneId]
-	ctx := Context{} // info to pass to scenes.
+	ctx := Context{Assets: cfg.Assets} // info to pass to scenes.
 	if !ok {
 		return errors.New(`Cannot start. There must be a scene with id "start" that is the entry-point`)
 	} else if ActiveScene == nil {

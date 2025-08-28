@@ -18,5 +18,5 @@ func (scene *Scene) Update(ctx engine.Context) (unload bool) {
 
 // called after Update returns true
 func (scene *Scene) Unload(ctx engine.Context) (nextSceneID string) {
-	return "stage" // the engine will switch to the scene that is registered with this id
+	return "play" // the engine will switch to the scene that is registered with this id
 }

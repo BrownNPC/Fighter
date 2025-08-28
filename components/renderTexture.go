@@ -10,10 +10,7 @@ type RenderTexture struct {
 	Width, Height int
 }
 
-// retro resolution
-var RecommendedVirtualResolution = V2(320, 240)
-
-// Recommended 320×240 resolution for retro feel
+// Does letterboxing (black bars) to maintain the resolution.
 func NewRenderTexture(resolution Vec2) RenderTexture {
 	virtualWidth, virtualHeight := resolution.ToInt()
 
@@ -36,8 +33,8 @@ func (r *RenderTexture) Render() {
 		target.Texture,
 		rl.Rectangle{Width: float32(target.Texture.Width), Height: float32(-target.Texture.Height)},
 		rl.Rectangle{
-			X:      (float32(rl.GetScreenWidth()) - float32(r.Width)*scale) * 0.5,
-			Y:      (float32(rl.GetScreenHeight()) - float32(r.Height)*scale) * 0.5,
+			X:      (float32(rl.GetRenderWidth()) - float32(r.Width)*scale) * 0.5,
+			Y:      (float32(rl.GetRenderHeight()) - float32(r.Height)*scale) * 0.5,
 			Width:  float32(r.Width) * scale,
 			Height: float32(r.Height) * scale,
 		},
@@ -56,6 +53,6 @@ func (r *RenderTexture) EndDrawing() {
 	r.Render()
 }
 func (r *RenderTexture) Scale() float32 {
-	return min(float32(rl.GetScreenWidth())/float32(r.Width),
-		float32(rl.GetScreenHeight())/float32(r.Height))
+	return min(float32(rl.GetRenderWidth())/float32(r.Width),
+		float32(rl.GetRenderHeight())/float32(r.Height))
 }
