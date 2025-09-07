@@ -1,15 +1,25 @@
 package main
 
 import (
+	"errors"
+	"flag"
 	"fmt"
 	"go/build"
 	"log"
+	"net/http"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 )
 
+func init() {
+}
 func main() {
+	// run an http server too
+	serve := flag.Bool("serve", false, "Run the server")
+	flag.Parse()
+
 	os.Mkdir("build/cache", 0o755)
 	var gitRepo = filepath.FromSlash("build/cache/Raylib-Go-Wasm")
 	var distPath = filepath.FromSlash("build/dist/web")
@@ -28,7 +38,7 @@ func main() {
 	os.Setenv("GOARCH", "wasm")
 	// call the Go compiler.
 	// make sure to add a replace directive to use the web build.
-	WithReplace(
+	err := WithReplace(
 		"github.com/gen2brain/raylib-go/raylib",
 		"./build/cache/Raylib-Go-Wasm/raylib",
 		func() error {
@@ -36,11 +46,17 @@ func main() {
 			buildOutput := filepath.Join(gitRepo, "index", "main.wasm")
 			cmd := exec.Command("go", "build", "-o", buildOutput, ".")
 			cmd.Stdout = os.Stdout
-			cmd.Stderr = os.Stderr
+			var err strings.Builder
+			cmd.Stderr = &err
+			if err.String() != "" {
+				return errors.New(err.String())
+			}
 			return cmd.Run()
 		},
 	)
-
+	if err != nil {
+		log.Fatalln("Build error", err)
+	}
 	os.MkdirAll(distPath, 0o755)
 	wasmRuntimePath := filepath.Join(build.Default.GOROOT, "lib/wasm/wasm_exec.js")
 	// copy wasm runtime
@@ -52,6 +68,14 @@ func main() {
 		log.Panicln("failed to copy wasm runtime", err)
 	}
 	fmt.Println("build artifacts are in:", distPath)
+	if *serve {
+		port := ":8080"
+		fmt.Printf("Serving on http://localhost%s\n", port)
+		err := http.ListenAndServe(port, http.FileServer(http.Dir(distPath)))
+		log.Fatalln(err)
+	}else{
+		fmt.Println("To run a server after building: go run build/web/* -serve ")
+	}
 }
 
 func DirExists(path string) bool {

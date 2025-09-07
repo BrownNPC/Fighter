@@ -1,9 +1,11 @@
 package engine
 
 import (
+	c "GameFrameworkTM/components"
 	"errors"
 	"fmt"
 	"io/fs"
+	"runtime"
 
 	rl "github.com/gen2brain/raylib-go/raylib"
 )
@@ -11,14 +13,17 @@ import (
 // config is passed to the Run function in main.go
 type Config struct {
 	//for implementing letterboxing (black bars) see:https://www.raylib.com/examples/core/loader.html?name=core_window_letterbox
-	WindowTitle string
-	Assets      fs.FS
+	WindowTitle       string
+	Assets            fs.FS
+	VirtualResolution c.Vec2
+	StageResolution c.Vec2
 }
 
 // info to pass to scenes
 // eg. a camera, game map, or save file
 type Context struct {
-	Assets fs.FS
+	IsWeb bool
+	Config
 }
 
 // a scene must implement these methods
@@ -34,7 +39,7 @@ type Scenes map[string]scene
 func Run(scenes Scenes, cfg Config) error {
 	ActiveSceneId := "start" // look for a scene named start as entry-point
 	ActiveScene, ok := scenes[ActiveSceneId]
-	ctx := Context{Assets: cfg.Assets} // info to pass to scenes.
+	ctx := Context{Config: cfg, IsWeb: runtime.GOOS == "js"} // info to pass to scenes.
 	if !ok {
 		return errors.New(`Cannot start. There must be a scene with id "start" that is the entry-point`)
 	} else if ActiveScene == nil {
@@ -49,9 +54,11 @@ func Run(scenes Scenes, cfg Config) error {
 	defer rl.CloseWindow() // de-initialization
 	defer rl.CloseAudioDevice()
 	// -----------------------CENTER WINDOW----------------------------
-	// WindowWidth, WindowHeight := (rl.GetScreenWidth()*90)/100, (rl.GetScreenHeight()*90)/100
-	// rl.SetWindowSize(WindowWidth, WindowHeight) //90% of screen
-	// centerWindow()
+	if !ctx.IsWeb {
+		WindowWidth, WindowHeight := (rl.GetScreenWidth()*85)/100, (rl.GetScreenHeight()*85)/100
+		rl.SetWindowSize(WindowWidth, WindowHeight) //90% of screen
+		centerWindow()
+	}
 	// ----LOAD START SCENE----
 	ActiveScene.Load(ctx)
 	UpdateAndDraw := func() error {

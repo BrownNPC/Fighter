@@ -1,6 +1,7 @@
 package main
 
 import (
+	c "GameFrameworkTM/components"
 	"GameFrameworkTM/engine"
 	"GameFrameworkTM/scenes"
 	"fmt"
@@ -15,8 +16,10 @@ var ASSETS fs.FS
 func main() {
 	rl.SetTraceLogLevel(rl.LogDebug)
 	err := engine.Run(scenes.Registered, engine.Config{
-		WindowTitle: "Fighter",
-		Assets:      ASSETS,
+		WindowTitle:       "Fighter",
+		Assets:            ASSETS,
+		VirtualResolution: c.V2(384, 288),
+		StageResolution:   c.V2(1024, 288),
 	})
 	if err != nil {
 		fmt.Println(err)

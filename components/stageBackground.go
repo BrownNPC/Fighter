@@ -9,22 +9,22 @@ import (
 	rl "github.com/gen2brain/raylib-go/raylib"
 )
 
-var StageResolution = V2(512, 288)
 
 type StageBackground struct {
 	Frames         []rl.Texture2D
 	SpriteAnimator SpriteAnimator
+	Resolution     Vec2
 }
 
 // The filesystem is only used for reading how many frames there are for a stage.
-func LoadStage(stageName string, rd fs.FS) (StageBackground, error) {
+func LoadStage(stageName string, resolution Vec2, as fs.FS) (StageBackground, error) {
 	const stageBackgroundPattern = "background_%d.png"
 	// paths of background frames
 	var framePaths []string
 	// find all files matching stageBackgroundPattern
 	// stageBackgroundPattern must enumerate
 	var lastFrame int = 1
-	err := fs.WalkDir(rd, path.Join("assets", stageName),
+	err := fs.WalkDir(as, path.Join("assets", stageName),
 		func(path string, d fs.DirEntry, err error) error {
 			if err != nil {
 				panic(err)
@@ -54,6 +54,7 @@ func LoadStage(stageName string, rd fs.FS) (StageBackground, error) {
 	}
 	return StageBackground{
 		Frames:         frames,
+		Resolution:     resolution,
 		SpriteAnimator: NewSpriteAnimator(len(frames), len(frames)),
 	}, nil
 }
@@ -65,12 +66,13 @@ func (s *StageBackground) Draw() {
 	// Strech it, scale it down, whatever.
 	rl.DrawTexturePro(frame,
 		rl.NewRectangle(0, 0, float32(frame.Width), float32(frame.Height)),
-		rl.NewRectangle(0, 0, StageResolution.X, StageResolution.Y),
+		rl.NewRectangle(0, 0, s.Resolution.X, s.Resolution.Y),
 		V2Z.R(),
 		0,
 		rl.White,
 	)
 }
+
 // Unload frees gpu resources
 func (s *StageBackground) Unload() {
 	for _, frame := range s.Frames {

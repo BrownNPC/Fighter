@@ -8,7 +8,7 @@ import (
 
 type Scene struct {
 	// draw to render texture
-	Screen c.RenderTexture
+	Screen c.Screen
 	Stage  c.StageBackground
 
 	// slice of unloader functions
@@ -18,10 +18,10 @@ type Scene struct {
 // Load is called once the scene is switched to
 func (scene *Scene) Load(ctx engine.Context) {
 	var err error
-	scene.Screen = c.NewRenderTexture(c.StageResolution)
+	scene.Screen = c.NewRenderTexture(ctx.VirtualResolution)
 	defer scene.Unloader.Add(scene.Screen.Unload)
 
-	scene.Stage, err = c.LoadStage("stage1", ctx.Assets)
+	scene.Stage, err = c.LoadStage("stage1", ctx.StageResolution, ctx.Assets)
 	if err != nil {
 		log.Fatalln("failed to load stage", err)
 	}

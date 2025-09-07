@@ -4,30 +4,30 @@ import (
 	rl "github.com/gen2brain/raylib-go/raylib"
 )
 
-// RenderTexture provides a wrapper around a raylib render texture
-type RenderTexture struct {
-	screen        rl.RenderTexture2D
+// Screen provides a wrapper around a raylib render texture
+type Screen struct {
+	renderTexture rl.RenderTexture2D
 	Width, Height int
 }
 
 // Does letterboxing (black bars) to maintain the resolution.
-func NewRenderTexture(resolution Vec2) RenderTexture {
+func NewRenderTexture(resolution Vec2) Screen {
 	virtualWidth, virtualHeight := resolution.ToInt()
 
-	r := RenderTexture{
-		screen: rl.LoadRenderTexture(int32(virtualWidth), int32(virtualHeight)),
-		Width:  virtualWidth,
-		Height: virtualHeight,
+	r := Screen{
+		renderTexture: rl.LoadRenderTexture(int32(virtualWidth), int32(virtualHeight)),
+		Width:         virtualWidth,
+		Height:        virtualHeight,
 	}
 	return r
 }
-func (r *RenderTexture) Unload() {
-	rl.UnloadRenderTexture(r.screen)
+func (r *Screen) Unload() {
+	rl.UnloadRenderTexture(r.renderTexture)
 }
 
 // render the render texture with black bars to keep the aspect ratio
-func (r *RenderTexture) Render() {
-	target := r.screen
+func (r *Screen) Render() {
+	target := r.renderTexture
 	scale := r.Scale()
 	rl.DrawTexturePro(
 		target.Texture,
@@ -43,16 +43,16 @@ func (r *RenderTexture) Render() {
 }
 
 // render the render texture with black bars to keep the aspect ratio
-func (r *RenderTexture) BeginDrawing() {
-	rl.BeginTextureMode(r.screen)
+func (r *Screen) BeginDrawing() {
+	rl.BeginTextureMode(r.renderTexture)
 }
 
 // render the render texture with black bars to keep the aspect ratio
-func (r *RenderTexture) EndDrawing() {
+func (r *Screen) EndDrawing() {
 	rl.EndTextureMode()
 	r.Render()
 }
-func (r *RenderTexture) Scale() float32 {
+func (r *Screen) Scale() float32 {
 	return min(float32(rl.GetRenderWidth())/float32(r.Width),
 		float32(rl.GetRenderHeight())/float32(r.Height))
 }
