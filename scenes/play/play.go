@@ -9,7 +9,7 @@ import (
 type Scene struct {
 	// draw to render texture
 	Screen c.RenderTexture
-	Stage  c.Stage
+	Stage  c.StageBackground
 
 	// slice of unloader functions
 	Unloader c.Stack[func()]

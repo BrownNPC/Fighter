@@ -49,39 +49,75 @@ func Run(scenes Scenes, cfg Config) error {
 	defer rl.CloseWindow() // de-initialization
 	defer rl.CloseAudioDevice()
 	// -----------------------CENTER WINDOW----------------------------
-	WindowWidth, WindowHeight := (rl.GetScreenWidth()*90)/100, (rl.GetScreenHeight()*90)/100
-	rl.SetWindowSize(WindowWidth, WindowHeight) //90% of screen
-	centerWindow()
+	// WindowWidth, WindowHeight := (rl.GetScreenWidth()*90)/100, (rl.GetScreenHeight()*90)/100
+	// rl.SetWindowSize(WindowWidth, WindowHeight) //90% of screen
+	// centerWindow()
 	// ----LOAD START SCENE----
 	ActiveScene.Load(ctx)
-	// ----MAIN LOOP----
-	for !rl.WindowShouldClose() {
-		// ----FULL SCREEN ON F11----
+	UpdateAndDraw := func() error {
 		if rl.IsKeyPressed(rl.KeyF11) {
 			rl.ToggleBorderlessWindowed()
 		}
 		rl.BeginDrawing()
 		rl.ClearBackground(rl.Black)
-		// -------UPDATE SCENE---------
-		var unloadActiveScene bool = ActiveScene.Update(ctx)
+		var unloadActiveScene bool = ActiveScene.Update(ctx) // -------UPDATE SCENE---------
 		rl.EndDrawing()
 		if unloadActiveScene {
-			// -------UNLOAD SCENE-------
-			var nextSceneId string = ActiveScene.Unload(ctx) // unload returns nextSceneId
+			var nextSceneId string = ActiveScene.Unload(ctx)
 			var nextScene, ok = scenes[nextSceneId]
-			// ------SWITCH SCENE------
 			if ok && nextScene != nil {
 				ActiveSceneId = nextSceneId
 				ActiveScene = nextScene
 				ActiveScene.Load(ctx)
-				continue
+				return nil
 			}
-			//-----ERROR HANDLING------
 			if !ok {
 				return fmt.Errorf(`There is no scene with id "%s", tried switching from scene "%s"`, nextSceneId, ActiveSceneId)
 			} else if nextScene == nil {
 				return fmt.Errorf(`scene with id "%s" is nil, tried switching from scene "%s"`, nextSceneId, ActiveSceneId)
 			}
+		}
+		return nil
+	}
+	rl.SetMain(func() {
+		UpdateAndDraw()
+	})
+	// ----MAIN LOOP----
+	for !rl.WindowShouldClose() {
+		// ----FULL SCREEN ON F11----
+		err := UpdateAndDraw()
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func UpdateAndDraw(ActiveScene scene, ctx Context, scenes Scenes, ActiveSceneId string) error {
+	if rl.IsKeyPressed(rl.KeyF11) {
+		rl.ToggleBorderlessWindowed()
+	}
+	rl.BeginDrawing()
+	rl.ClearBackground(rl.Black)
+	// -------UPDATE SCENE---------
+	var unloadActiveScene bool = ActiveScene.Update(ctx)
+	rl.EndDrawing()
+	if unloadActiveScene {
+		// -------UNLOAD SCENE-------
+		var nextSceneId string = ActiveScene.Unload(ctx) // unload returns nextSceneId
+		var nextScene, ok = scenes[nextSceneId]
+		// ------SWITCH SCENE------
+		if ok && nextScene != nil {
+			ActiveSceneId = nextSceneId
+			ActiveScene = nextScene
+			ActiveScene.Load(ctx)
+			return nil
+		}
+		//-----ERROR HANDLING------
+		if !ok {
+			return fmt.Errorf(`There is no scene with id "%s", tried switching from scene "%s"`, nextSceneId, ActiveSceneId)
+		} else if nextScene == nil {
+			return fmt.Errorf(`scene with id "%s" is nil, tried switching from scene "%s"`, nextSceneId, ActiveSceneId)
 		}
 	}
 	return nil

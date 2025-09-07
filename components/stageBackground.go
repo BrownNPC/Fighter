@@ -11,13 +11,13 @@ import (
 
 var StageResolution = V2(512, 288)
 
-type Stage struct {
+type StageBackground struct {
 	Frames         []rl.Texture2D
 	SpriteAnimator SpriteAnimator
 }
 
 // The filesystem is only used for reading how many frames there are for a stage.
-func LoadStage(stageName string, rd fs.FS) (Stage, error) {
+func LoadStage(stageName string, rd fs.FS) (StageBackground, error) {
 	const stageBackgroundPattern = "background_%d.png"
 	// paths of background frames
 	var framePaths []string
@@ -42,22 +42,22 @@ func LoadStage(stageName string, rd fs.FS) (Stage, error) {
 			return nil
 		})
 	if err != nil {
-		return Stage{}, err
+		return StageBackground{}, err
 	}
 	if len(framePaths) == 0 {
-		return Stage{}, fmt.Errorf("No stage frames found for stage assets/%s. Make sure to have at least 1 file with the name background_1.png", stageName)
+		return StageBackground{}, fmt.Errorf("No stage frames found for stage assets/%s. Make sure to have at least 1 file with the name background_1.png", stageName)
 	}
 	frames := make([]rl.Texture2D, len(framePaths))
 
 	for i, tex := range framePaths {
 		frames[i] = rl.LoadTexture(tex)
 	}
-	return Stage{
+	return StageBackground{
 		Frames:         frames,
-		SpriteAnimator: NewSpriteAnimator(len(frames)/2, len(frames)),
+		SpriteAnimator: NewSpriteAnimator(len(frames), len(frames)),
 	}, nil
 }
-func (s *Stage) Draw() {
+func (s *StageBackground) Draw() {
 	currentFrame := s.SpriteAnimator.GetCurrentFrame()
 	frame := s.Frames[currentFrame]
 
@@ -72,7 +72,7 @@ func (s *Stage) Draw() {
 	)
 }
 // Unload frees gpu resources
-func (s *Stage) Unload() {
+func (s *StageBackground) Unload() {
 	for _, frame := range s.Frames {
 		if rl.IsTextureValid(frame) {
 			rl.UnloadTexture(frame)
