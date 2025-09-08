@@ -39,7 +39,8 @@ func (scene *Scene) Unload(ctx engine.Context) (nextSceneID string) {
 // update is called every frame
 func (scene *Scene) Update(ctx engine.Context) (unload bool) {
 	scene.Screen.BeginDrawing()
-	scene.Stage.Draw()
+	// y: 300-288
+	scene.Stage.Draw(0,-12)
 	scene.Screen.EndDrawing()
 	return false // if true is returned, Unload is called
 }

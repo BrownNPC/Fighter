@@ -14,7 +14,9 @@ import (
 
 type StageBackground struct {
 	// single texture containing frames, horizontally.
-	Frames         rl.Texture2D
+	Frames        rl.Texture2D
+	Rows, Columns int
+
 	SpriteAnimator SpriteAnimator
 	Resolution     Vec2
 }
@@ -27,21 +29,21 @@ func LoadStage(stageName string, resolution Vec2, as fs.FS) (StageBackground, er
 		return StageBackground{}, err
 	}
 	var (
-		// frame_192.png
 		frameName string
+		rows      int
+		columns   int
 		//192
 		numFrames int
 	)
 
-	re := regexp.MustCompile(`^frames_(\d+)\.png$`)
+	re := regexp.MustCompile(`^stage_(\d+)x(\d+)_(\d+)frames\.png$`)
 	for _, entry := range entries {
 		if !entry.IsDir() {
 			if m := re.FindStringSubmatch(entry.Name()); m != nil {
 				frameName = entry.Name()
-				numFrames, err = strconv.Atoi(m[1])
-				if err != nil {
-					return StageBackground{}, fmt.Errorf("failed to convert string to int %w %s", err, frameName)
-				}
+				rows, _ = strconv.Atoi(m[1])
+				columns, _ = strconv.Atoi(m[2])
+				numFrames, _ = strconv.Atoi(m[3])
 			}
 		}
 	}
@@ -49,19 +51,26 @@ func LoadStage(stageName string, resolution Vec2, as fs.FS) (StageBackground, er
 		return StageBackground{}, fmt.Errorf("no frames found. make sure there is a frames_<numberOfFrames>.png in %s for example frames_12.png that contains all the frames for the background", stagePath)
 	}
 	return StageBackground{
-		Frames:         rl.LoadTexture(filepath.Join(stagePath, frameName)),
-		SpriteAnimator: NewSpriteAnimator(60, numFrames),
+		Frames: rl.LoadTexture(filepath.Join(stagePath, frameName)),
+		Rows:   rows, Columns: columns,
+		SpriteAnimator: NewSpriteAnimator(30, numFrames),
 		Resolution:     resolution,
 	}, nil
 }
-func (s *StageBackground) Draw() {
+func (s *StageBackground) Draw(x,y float32) {
 	currentFrame := s.SpriteAnimator.GetCurrentFrame()
-	srcX := float32(currentFrame) * s.Resolution.X
+
+	column := currentFrame % s.Columns
+	row := currentFrame / s.Columns
+
+	srcX := float32(column) * s.Resolution.X
+	srcY := float32(row) * s.Resolution.Y
+
 	// we dont care what size the frame is. Just draw it as Stage Resolution.
 	// Strech it, scale it down, whatever.
 	rl.DrawTexturePro(s.Frames,
-		rl.NewRectangle(srcX, 0, s.Resolution.X, s.Resolution.Y),
-		rl.NewRectangle(0, 0, s.Resolution.X, s.Resolution.Y),
+		rl.NewRectangle(srcX,srcY, s.Resolution.X, s.Resolution.Y),
+		rl.NewRectangle(x, y, s.Resolution.X, s.Resolution.Y),
 		V2Z.R(),
 		0,
 		rl.White,

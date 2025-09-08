@@ -6,7 +6,6 @@ import (
 	"image"
 	"image/draw"
 	"image/png"
-	"io/fs"
 	"log"
 	"math"
 	"os"
@@ -30,31 +29,25 @@ func init() {
 func main() {
 	root := flag.Arg(0)
 	if root == "" {
-		log.Fatal("provide stage frames root directory as arg")
+		fmt.Println("provide stage frames directory")
+		return
 	}
 	re := regexp.MustCompile(`^background_(\d+)\.png$`)
 
-	as := os.DirFS(".")
-	err := fs.WalkDir(as, root, func(p string, d fs.DirEntry, err error) error {
-		if err != nil {
-			return err
-		}
-		if d.IsDir() {
-			return nil
-		}
-		name := d.Name()
-		m := re.FindStringSubmatch(name)
+	dirs, err := os.ReadDir(root)
+	if err != nil {
+		log.Fatal(err)
+	}
+	for _, d := range dirs {
+		p := filepath.Join(root, d.Name())
+		m := re.FindStringSubmatch(d.Name())
 		if m != nil {
 			n, err := strconv.Atoi(m[1])
 			if err != nil {
-				return err
+				log.Fatalln("failed to convert to int", err)
 			}
 			pairs = append(pairs, pair{index: n, path: p})
 		}
-		return nil
-	})
-	if err != nil {
-		log.Fatal(err)
 	}
 	if len(pairs) == 0 {
 		log.Fatal("no frames found in directory. Make sure there are files with the convention background_1.png and so on.")
@@ -77,16 +70,16 @@ func MakeCombinedTexture(saveDir string) {
 
 	size := frame.Bounds().Size()
 	width, height := size.X, size.Y
-	totalWidth := len(pairs) * width
 
 	numFrames := len(pairs)
 	// try to make it square.
 	cols := int(math.Ceil(math.Sqrt(float64(numFrames))))
 	rows := int(math.Ceil(float64(numFrames) / float64(cols)))
-
+	totalWidth := cols * width
+	totalHeight := rows * height
 	// texture containing all the frames
-	sheet := image.NewRGBA(image.Rect(0, 0, totalWidth, height))
-	// paste each frame side-by-side
+	sheet := image.NewRGBA(image.Rect(0, 0, totalWidth, totalHeight))
+	// paste each frame into a set
 	for i, p := range pairs {
 		fr, err := os.Open(p.path)
 		if err != nil {
@@ -102,14 +95,14 @@ func MakeCombinedTexture(saveDir string) {
 		row := i / cols
 		x := col * width
 		y := row * height
-		// destination rectangle for this frame
-		offset := i * width
-		rect := image.Rect(offset, 0, offset+width, height)
 
+		rect := image.Rect(x, y, x+width, y+height)
 		draw.Draw(sheet, rect, img, image.Point{}, draw.Over)
 	}
-	// N.png where N is the number of frames
-	savePath := filepath.Join(saveDir, strconv.Itoa(len(pairs))+".png")
+	// stage_RowsxColumns_numFrames.png
+	savePath := filepath.Join(saveDir,
+		fmt.Sprintf("stage_%dx%d_%dframes.png", rows, cols, numFrames))
+
 	f, err = os.Create(savePath)
 	if err != nil {
 		panic(err)
