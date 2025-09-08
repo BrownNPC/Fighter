@@ -49,7 +49,9 @@ func WithReplace(oldPath, newPath string, action func() error) error {
 	if err := os.WriteFile("go.mod", newBytes, 0644); err != nil {
 		return fmt.Errorf("write modified go.mod: %w", err)
 	}
-	exec.Command("go", "mod", "tidy").Run()
+	if err := exec.Command("go", "mod", "tidy").Run(); err != nil {
+		return fmt.Errorf("failed to tidy go.mod: %w", err)
+	}
 
 	// Run the user action while the replace is present
 	if err := action(); err != nil {

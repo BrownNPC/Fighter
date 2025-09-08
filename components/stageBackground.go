@@ -3,7 +3,6 @@ package c
 import (
 	"fmt"
 	"io/fs"
-	"os"
 	"path"
 	"path/filepath"
 	"regexp"
@@ -24,7 +23,7 @@ type StageBackground struct {
 // The filesystem is only used for reading how many frames there are for a stage.
 func LoadStage(stageName string, resolution Vec2, as fs.FS) (StageBackground, error) {
 	stagePath := path.Join("assets", "stages", stageName)
-	entries, err := os.ReadDir(stagePath)
+	entries, err := fs.ReadDir(as, stagePath)
 	if err != nil {
 		return StageBackground{}, err
 	}
@@ -57,7 +56,7 @@ func LoadStage(stageName string, resolution Vec2, as fs.FS) (StageBackground, er
 		Resolution:     resolution,
 	}, nil
 }
-func (s *StageBackground) Draw(x,y float32) {
+func (s *StageBackground) Draw(x, y float32) {
 	currentFrame := s.SpriteAnimator.GetCurrentFrame()
 
 	column := currentFrame % s.Columns
@@ -69,7 +68,7 @@ func (s *StageBackground) Draw(x,y float32) {
 	// we dont care what size the frame is. Just draw it as Stage Resolution.
 	// Strech it, scale it down, whatever.
 	rl.DrawTexturePro(s.Frames,
-		rl.NewRectangle(srcX,srcY, s.Resolution.X, s.Resolution.Y),
+		rl.NewRectangle(srcX, srcY, s.Resolution.X, s.Resolution.Y),
 		rl.NewRectangle(x, y, s.Resolution.X, s.Resolution.Y),
 		V2Z.R(),
 		0,
