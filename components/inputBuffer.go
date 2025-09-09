@@ -2,7 +2,6 @@ package c
 
 import (
 	"GameFrameworkTM/components/frame"
-	"slices"
 )
 
 const (
@@ -36,14 +35,15 @@ func (b *InputBuffer) Add(i Input) {
 
 // GetPrevious inputs from now till however many frames ago
 func (b *InputBuffer) GetPrevious(tillFramesAgo frame.Frame) Inputs {
+	// inputs sorted newest to oldest
 	var totalInputs = make([]Input, 0, InputBufferSize)
-	// start at the last write, and then walk backwards until
-	// we get an input that is too old.
+	// start at the last write, and then walk backwards,
+	// until we get an input that is too old.
 	var cursor int
 	for range InputBufferSize {
 		// we move back from here, because the cursor does not represent the last write
 		// but the next write.
-		cursor = (b.cursor - 1) % InputBufferSize
+		cursor = (b.cursor - 1 + InputBufferSize) % InputBufferSize
 		frameInput := b.buf[cursor]
 
 		// too old or uninitialized, break.
@@ -53,7 +53,5 @@ func (b *InputBuffer) GetPrevious(tillFramesAgo frame.Frame) Inputs {
 
 		totalInputs = append(totalInputs, frameInput.Input)
 	}
-	// newest to oldest sort
-	slices.Reverse(totalInputs)
 	return totalInputs
 }

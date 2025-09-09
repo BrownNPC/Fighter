@@ -1,7 +1,5 @@
 package c
 
-import "slices"
-
 type Input uint8
 type Inputs []Input
 
@@ -17,8 +15,10 @@ func (inp Inputs) Match(with ...Input) bool {
 	if len(with) > len(inp) {
 		return false
 	}
-	inp[:len(with)]
-	slices.Equal()
-	for _, input := range inp {
+	for i := range with {
+		if inp[i] != with[i] {
+			return false
+		}
 	}
+	return true
 }
