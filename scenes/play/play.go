@@ -8,9 +8,8 @@ import (
 
 type Scene struct {
 	// draw to render texture
-	Screen c.Screen
-	Stage  c.StageBackground
-
+	Screen     c.Screen
+	Stage      c.StageBackground
 	// slice of unloader functions
 	Unloader c.Stack[func()]
 }
@@ -39,8 +38,8 @@ func (scene *Scene) Unload(ctx engine.Context) (nextSceneID string) {
 // update is called every frame
 func (scene *Scene) Update(ctx engine.Context) (unload bool) {
 	scene.Screen.BeginDrawing()
-	// y: 300-288
-	scene.Stage.Draw(0,-12)
+	// y: 300-288 = 12px
+	scene.Stage.Draw(0, -12)
 	scene.Screen.EndDrawing()
 	return false // if true is returned, Unload is called
 }

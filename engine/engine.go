@@ -2,6 +2,7 @@ package engine
 
 import (
 	c "GameFrameworkTM/components"
+	"GameFrameworkTM/components/frame"
 	"errors"
 	"fmt"
 	"io/fs"
@@ -16,7 +17,7 @@ type Config struct {
 	WindowTitle       string
 	Assets            fs.FS
 	VirtualResolution c.Vec2
-	StageResolution c.Vec2
+	StageResolution   c.Vec2
 }
 
 // info to pass to scenes
@@ -67,6 +68,8 @@ func Run(scenes Scenes, cfg Config) error {
 		}
 		rl.BeginDrawing()
 		rl.ClearBackground(rl.Black)
+		// update frame package
+		frame.Increment()
 		var unloadActiveScene bool = ActiveScene.Update(ctx) // -------UPDATE SCENE---------
 		rl.EndDrawing()
 		if unloadActiveScene {
