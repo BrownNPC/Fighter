@@ -5,7 +5,6 @@ import (
 	"slices"
 )
 
-
 const (
 	// circular buffer size, how many inputs it can store.
 	InputBufferSize = 32
@@ -38,12 +37,23 @@ func (b *InputBuffer) Add(i Input) {
 // GetPrevious inputs from now till however many frames ago
 func (b *InputBuffer) GetPrevious(tillFramesAgo frame.Frame) Inputs {
 	var totalInputs = make([]Input, 0, InputBufferSize)
-	for _, frameInput := range b.buf {
+	// start at the last write, and then walk backwards until
+	// we get an input that is too old.
+	var cursor int
+	for range InputBufferSize {
+		// we move back from here, because the cursor does not represent the last write
+		// but the next write.
+		cursor = (b.cursor - 1) % InputBufferSize
+		frameInput := b.buf[cursor]
+
+		// too old or uninitialized, break.
 		if frame.Since(frameInput.Frame) > tillFramesAgo {
-			continue
+			break
 		}
+
 		totalInputs = append(totalInputs, frameInput.Input)
 	}
+	// newest to oldest sort
 	slices.Reverse(totalInputs)
 	return totalInputs
 }
