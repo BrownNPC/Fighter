@@ -6,14 +6,13 @@ import (
 
 const (
 	// circular buffer size, how many inputs it can store.
-	InputBufferSize = 32
+	InputBufferSize = 60
 	// clear after 6 frames
 	InputBufferClearAfter = frame.Frame(6)
 )
 
 type FrameInput struct {
 	Input Input
-	Frame frame.Frame
 }
 
 // InputBuffer is a circular buffer of inputs.
@@ -22,36 +21,37 @@ type InputBuffer struct {
 	// circular buffer
 	buf [InputBufferSize]FrameInput
 	// where to add the input next
-	cursor int
+	nextWrite int
+	// index for the current input in the buffer.
+	CurrentTick int
 }
 
-func (b *InputBuffer) Add(i Input) {
-	b.buf[b.cursor] = FrameInput{
-		Frame: frame.Now(),
-		Input: i,
-	}
-	b.cursor = (b.cursor + 1) % InputBufferSize
-}
-
-// GetPrevious inputs from now till however many frames ago
-func (b *InputBuffer) GetPrevious(tillFramesAgo frame.Frame) Inputs {
-	// inputs sorted newest to oldest
-	var totalInputs = make([]Input, 0, InputBufferSize)
-	// start at the last write, and then walk backwards,
-	// until we get an input that is too old.
-	var cursor int
-	for range InputBufferSize {
-		// we move back from here, because the cursor does not represent the last write
-		// but the next write.
-		cursor = (b.cursor - 1 + InputBufferSize) % InputBufferSize
-		frameInput := b.buf[cursor]
-
-		// too old or uninitialized, break.
-		if frame.Since(frameInput.Frame) > tillFramesAgo {
-			break
+func (b *InputBuffer) Add(inputs ...Input) {
+	for _, input := range inputs {
+		b.buf[b.nextWrite] = FrameInput{
+			Input: input,
 		}
-
-		totalInputs = append(totalInputs, frameInput.Input)
+		b.CurrentTick = b.nextWrite
+		b.nextWrite = (b.nextWrite + 1) % InputBufferSize
 	}
-	return totalInputs
+}
+
+// https://gamedev.stackexchange.com/a/68134
+// The algorithm simply checks each input state from the
+// CurrentTick offset inside the input buffer back until maxDuration.
+func (b *InputBuffer) CheckSequence(maxDuration frame.Frame, sequence ...Input) bool {
+	if len(sequence) == 0 {
+		return true
+	}
+	w := len(sequence) - 1
+	for i := range int(maxDuration) {
+		frameInput := b.buf[(b.CurrentTick-i+InputBufferSize)%InputBufferSize]
+		if frameInput.Input == sequence[w] {
+			w--
+		}
+		if w == -1 {
+			return true
+		}
+	}
+	return false
 }
