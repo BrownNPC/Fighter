@@ -29,7 +29,7 @@ func (scene *Scene) Load(ctx engine.Context) {
 		log.Fatalln("failed to load stage", err)
 	}
 	scene.Shadow = rl.LoadTexture("assets/misc/shadow.png")
-	scene.Steve, err = c.LoadCharacterSprite("steve", "idle", 11, c.V2(128, 128), ctx.Assets)
+	scene.Steve, err = c.LoadCharacterSprite("steve", "idle", 11, c.V2(256, 256), ctx.Assets)
 	defer scene.Unloader.Add(scene.Stage.Unload)
 }
 

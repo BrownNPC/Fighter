@@ -12,8 +12,9 @@ import (
 	"regexp"
 	"sort"
 	"strconv"
+
+	"github.com/nfnt/resize"
 )
-import "github.com/nfnt/resize"
 
 // frame index and it's path
 type pair struct {
@@ -153,13 +154,29 @@ func MakeCombinedTexture(saveDir string) {
 			Fatal("error decoding frame:", p.path, err)
 		}
 
-		// if downscale flag is set, resize each sprite individually using Lanczos3
+		// if downscale flag is set, resize each sprite individually using Mitchell (or change to Lanczos2/3)
 		var sprite image.Image = img
 		if *Flag_Downscale {
 			origBounds := img.Bounds().Size()
 			newW := uint(int(math.Ceil(float64(origBounds.X) / 2.0)))
 			newH := uint(int(math.Ceil(float64(origBounds.Y) / 2.0)))
-			sprite = resize.Resize(newW, newH, img, resize.Lanczos3)
+
+			// convert to NRGBA (unpremultiplied)
+			nrgba := toNRGBA(img)
+
+			// premultiply alpha
+			premultiplyNRGBA(nrgba)
+
+			// resize the *premultiplied* image
+			resizedPremult := resize.Resize(newW, newH, nrgba, resize.Lanczos3)
+
+			// convert resized back to NRGBA
+			resizedNRGBA := toNRGBA(resizedPremult)
+
+			// unpremultiply
+			unpremultiplyNRGBA(resizedNRGBA)
+
+			sprite = resizedNRGBA
 		}
 
 		col := i % cols
@@ -185,7 +202,67 @@ func MakeCombinedTexture(saveDir string) {
 	}
 	fmt.Println("saved as", savePath)
 }
+
 func Fatal(err ...any) {
 	fmt.Println(err...)
 	os.Exit(0)
 }
+
+// toNRGBA converts any image.Image to *image.NRGBA (makes a copy).
+func toNRGBA(img image.Image) *image.NRGBA {
+	b := img.Bounds()
+	out := image.NewNRGBA(b)
+	draw.Draw(out, b, img, b.Min, draw.Src)
+	return out
+}
+// premultiply alpha in an *image.NRGBA (in place)
+func premultiplyNRGBA(img *image.NRGBA) {
+	b := img.Bounds()
+	minX, minY, maxX, maxY := b.Min.X, b.Min.Y, b.Max.X, b.Max.Y
+
+	for y := minY; y < maxY; y++ {
+		rowStart := (y - minY) * img.Stride
+		// iterate x and use rowStart + (x-minX)*4
+		for x := minX; x < maxX; x++ {
+			i := rowStart + (x-minX)*4
+			r := img.Pix[i+0]
+			g := img.Pix[i+1]
+			bc := img.Pix[i+2]
+			a := img.Pix[i+3]
+			if a == 0 {
+				img.Pix[i+0], img.Pix[i+1], img.Pix[i+2] = 0, 0, 0
+				continue
+			}
+			// multiply with rounding
+			img.Pix[i+0] = uint8((uint16(r)*uint16(a) + 127) / 255)
+			img.Pix[i+1] = uint8((uint16(g)*uint16(a) + 127) / 255)
+			img.Pix[i+2] = uint8((uint16(bc)*uint16(a) + 127) / 255)
+		}
+	}
+}
+
+// unpremultiply alpha in an *image.NRGBA (in place)
+func unpremultiplyNRGBA(img *image.NRGBA) {
+	b := img.Bounds()
+	minX, minY, maxX, maxY := b.Min.X, b.Min.Y, b.Max.X, b.Max.Y
+
+	for y := minY; y < maxY; y++ {
+		rowStart := (y - minY) * img.Stride
+		for x := minX; x < maxX; x++ {
+			i := rowStart + (x-minX)*4
+			r := img.Pix[i+0]
+			g := img.Pix[i+1]
+			bc := img.Pix[i+2]
+			a := img.Pix[i+3]
+			if a == 0 {
+				img.Pix[i+0], img.Pix[i+1], img.Pix[i+2] = 0, 0, 0
+				continue
+			}
+			// unmultiply with rounding; clamp to 0..255
+			img.Pix[i+0] = uint8(min(255, int((uint16(r)*255+uint16(a)/2)/uint16(a))))
+			img.Pix[i+1] = uint8(min(255, int((uint16(g)*255+uint16(a)/2)/uint16(a))))
+			img.Pix[i+2] = uint8(min(255, int((uint16(bc)*255+uint16(a)/2)/uint16(a))))
+		}
+	}
+}
+
