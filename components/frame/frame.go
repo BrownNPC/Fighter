@@ -3,7 +3,7 @@
 package frame
 
 // Frame is a number representing a point in time.
-type Frame int64
+type Frame int
 
 // the frame the game currently is on
 var currentFrame Frame

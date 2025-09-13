@@ -58,21 +58,24 @@ func loadBaseSprite(as fs.FS, dirPath, filenamePrefix string, fps int, resolutio
 		Resource:       rl.LoadTexture(filepath.Join(dirPath, fileName)),
 	}, err
 }
-
-// Draw will draw the sprite at the required Resolution at the given coordinates.
-func (s *BaseSprite) Draw(x, y float32) {
-	currentFrame := s.SpriteAnimator.GetCurrentFrame()
-
+func (s *BaseSprite) GetRectForFrame(f int) rl.Rectangle {
+	currentFrame := int(f)
 	column := currentFrame % s.Columns
 	row := currentFrame / s.Columns
 
 	srcX := float32(column) * s.Resolution.X
 	srcY := float32(row) * s.Resolution.Y
+	return rl.NewRectangle(srcX, srcY, s.Resolution.X, s.Resolution.Y)
+}
+
+// Draw will draw the sprite at the required Resolution at the given coordinates.
+func (s *BaseSprite) Draw(x, y float32) {
+	srcRec := s.GetRectForFrame(s.GetCurrentFrame())
 
 	// we dont care what size the frame is. Just draw it as the required resolution.
 	// Strech it, scale it down, whatever.
 	rl.DrawTexturePro(s.Resource,
-		rl.NewRectangle(srcX, srcY, s.Resolution.X, s.Resolution.Y),
+		srcRec,
 		rl.NewRectangle(x, y, s.Resolution.X, s.Resolution.Y),
 		V2Z.R(),
 		0,

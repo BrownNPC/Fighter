@@ -18,8 +18,8 @@ func main() {
 	err := engine.Run(scenes.Registered, engine.Config{
 		WindowTitle:       "Fighter",
 		Assets:            ASSETS,
-		VirtualResolution: c.V2(384, 288),
-		StageResolution:   c.V2(384, 300),
+		VirtualResolution: c.V2(768, 576),
+		StageResolution:   c.V2(768, 600),
 	})
 	if err != nil {
 		fmt.Println(err)

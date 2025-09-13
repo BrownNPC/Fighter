@@ -13,6 +13,7 @@ import (
 	"sort"
 	"strconv"
 )
+import "github.com/nfnt/resize"
 
 // frame index and it's path
 type pair struct {
@@ -23,6 +24,7 @@ type pair struct {
 var pairs []pair
 var Flag_Mode *string
 var Flag_OutputDir *string
+var Flag_Downscale *bool
 
 // prefix for the filename before the row and column info
 var Flag_Prefix *string
@@ -55,6 +57,7 @@ func init() {
 	Flag_Mode = flag.String("mode", "bg", "-mode sprite")
 	Flag_OutputDir = flag.String("o", "placeholder", "-o /path/to/output/directory")
 	Flag_Prefix = flag.String("prefix", "placeholder", "-prefix walk")
+	Flag_Downscale = flag.Bool("downscale", false, "will downscale the image to half res for anti aliasing")
 	flag.Parse()
 	// select the mode from the flags
 	for _, mode := range Modes {
@@ -115,6 +118,7 @@ func MakeCombinedTexture(saveDir string) {
 		panic(err)
 	}
 	frame, _, err := image.Decode(f)
+	f.Close()
 	if err != nil {
 		Fatal(pairs[0].path, err)
 	}
@@ -122,12 +126,19 @@ func MakeCombinedTexture(saveDir string) {
 	size := frame.Bounds().Size()
 	width, height := size.X, size.Y
 
+	if *Flag_Downscale {
+		// target size when downscaling each sprite by 2
+		width = int(math.Ceil(float64(width) / 2.0))
+		height = int(math.Ceil(float64(height) / 2.0))
+	}
+
 	numFrames := len(pairs)
 	// try to make it square.
 	cols := int(math.Ceil(math.Sqrt(float64(numFrames))))
 	rows := int(math.Ceil(float64(numFrames) / float64(cols)))
 	totalWidth := cols * width
 	totalHeight := rows * height
+
 	// texture containing all the frames
 	sheet := image.NewRGBA(image.Rect(0, 0, totalWidth, totalHeight))
 	// paste each frame into a set
@@ -142,25 +153,34 @@ func MakeCombinedTexture(saveDir string) {
 			Fatal("error decoding frame:", p.path, err)
 		}
 
+		// if downscale flag is set, resize each sprite individually using Lanczos3
+		var sprite image.Image = img
+		if *Flag_Downscale {
+			origBounds := img.Bounds().Size()
+			newW := uint(int(math.Ceil(float64(origBounds.X) / 2.0)))
+			newH := uint(int(math.Ceil(float64(origBounds.Y) / 2.0)))
+			sprite = resize.Resize(newW, newH, img, resize.Lanczos3)
+		}
+
 		col := i % cols
 		row := i / cols
 		x := col * width
 		y := row * height
 
 		rect := image.Rect(x, y, x+width, y+height)
-		draw.Draw(sheet, rect, img, image.Point{}, draw.Over)
+		draw.Draw(sheet, rect, sprite, image.Point{}, draw.Over)
 	}
 	// stage_RowsxColumns_numFrames.png
 	savePath := filepath.Join(saveDir,
 		fmt.Sprintf(SelectedMode.Prefix+"_%dx%d_%dframes.png", rows, cols, numFrames))
 
-	f, err = os.Create(savePath)
+	fout, err := os.Create(savePath)
 	if err != nil {
 		panic(err)
 	}
-	defer f.Close()
+	defer fout.Close()
 
-	if err := png.Encode(f, sheet); err != nil {
+	if err := png.Encode(fout, sheet); err != nil {
 		Fatal("error encoding png:", err)
 	}
 	fmt.Println("saved as", savePath)
