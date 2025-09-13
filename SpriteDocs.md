@@ -31,7 +31,7 @@
 ---
 - Format: PNG Sequence
 - Length Mode: Animation Length
-- FPS: (use an odd number eg. 11)
+- FPS: (use an odd number eg. 11 or 23)
 - Resolution: 512 512
 - Check "Play Animation"
 - Confirm

@@ -46,7 +46,7 @@ func (scene *Scene) Update(ctx engine.Context) (unload bool) {
 	scene.Screen.BeginDrawing()
 	// y: 300-288 = 12px
 	scene.Stage.Draw(0, -12)
-	rl.DrawTexture(scene.Shadow, 48, 217, rl.White)
+	rl.DrawTexture(scene.Shadow, 96, 434, rl.White)
 	scene.Steve.Draw(0, 97)
 	scene.Screen.EndDrawing()
 	return false // if true is returned, Unload is called
