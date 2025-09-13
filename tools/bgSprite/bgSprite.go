@@ -6,7 +6,6 @@ import (
 	"image"
 	"image/draw"
 	"image/png"
-	"log"
 	"math"
 	"os"
 	"path/filepath"
@@ -22,42 +21,79 @@ type pair struct {
 }
 
 var pairs []pair
+var Flag_Mode *string
+
+type Mode struct {
+	// name that would be used for the -mode flag
+	name      string
+	FileRegex string
+	// what is the submatch for the incrementing number in this regex
+	// eg 1.png would have the submatch 1
+	NumberSubmatch int
+	Prefix         string
+}
+
+var Modes = []Mode{
+	{"bg", `^background_(\d+)\.png$`, 1, "stage"},
+	{"sprite", `^(\d+)\.png$`, 1, "sprite"},
+}
+
+var SelectedMode Mode
+var TotalModes string
 
 func init() {
+	// used for help
+	for _, mode := range Modes {
+		TotalModes += " " + mode.name + " "
+	}
+	TotalModes = fmt.Sprintf("{%s}", TotalModes)
+	// parse -mode flag
+	Flag_Mode = flag.String("mode", "bg", "-mode sprite")
 	flag.Parse()
+	// select the mode from the flags
+	for _, mode := range Modes {
+		if mode.name == *Flag_Mode {
+			SelectedMode = mode
+			return
+		}
+	}
+	fmt.Println("invalid mode, available modes are", TotalModes)
+	os.Exit(0)
 }
+
 func main() {
 	root := flag.Arg(0)
 	if root == "" {
-		fmt.Println("provide stage frames directory")
+		fmt.Println("provide frames directory as argument")
 		return
 	}
-	re := regexp.MustCompile(`^background_(\d+)\.png$`)
+	fmt.Println("selected mode", SelectedMode.name, "out of", TotalModes)
+	re := regexp.MustCompile(SelectedMode.FileRegex)
 
 	dirs, err := os.ReadDir(root)
 	if err != nil {
-		log.Fatal(err)
+		Fatal(err)
 	}
 	for _, d := range dirs {
 		p := filepath.Join(root, d.Name())
 		m := re.FindStringSubmatch(d.Name())
 		if m != nil {
-			n, err := strconv.Atoi(m[1])
+			n, err := strconv.Atoi(m[SelectedMode.NumberSubmatch])
 			if err != nil {
-				log.Fatalln("failed to convert to int", err)
+				Fatal("failed to convert to int", err)
 			}
 			pairs = append(pairs, pair{index: n, path: p})
 		}
 	}
 	if len(pairs) == 0 {
-		log.Fatal("no frames found in directory. Make sure there are files with the convention background_1.png and so on.")
+		Fatal("no frames found in directory. Make sure there are files with the regex " + SelectedMode.FileRegex)
 	}
-
+	// sort by filename
 	sort.Slice(pairs, func(i, j int) bool { return pairs[i].index < pairs[j].index })
 	MakeCombinedTexture(root)
 }
 
-// combine all the frames into 1 long sprite sheet.
+// combine all the frames into 1 big square sprite sheet.
 func MakeCombinedTexture(saveDir string) {
 	f, err := os.Open(pairs[0].path)
 	if err != nil {
@@ -65,7 +101,7 @@ func MakeCombinedTexture(saveDir string) {
 	}
 	frame, _, err := image.Decode(f)
 	if err != nil {
-		log.Panicln(pairs[0].path, err)
+		Fatal(pairs[0].path, err)
 	}
 
 	size := frame.Bounds().Size()
@@ -83,12 +119,12 @@ func MakeCombinedTexture(saveDir string) {
 	for i, p := range pairs {
 		fr, err := os.Open(p.path)
 		if err != nil {
-			log.Panicln("error opening frame:", p.path, err)
+			Fatal("error opening frame:", p.path, err)
 		}
 		img, _, err := image.Decode(fr)
 		fr.Close()
 		if err != nil {
-			log.Panicln("error decoding frame:", p.path, err)
+			Fatal("error decoding frame:", p.path, err)
 		}
 
 		col := i % cols
@@ -101,7 +137,7 @@ func MakeCombinedTexture(saveDir string) {
 	}
 	// stage_RowsxColumns_numFrames.png
 	savePath := filepath.Join(saveDir,
-		fmt.Sprintf("stage_%dx%d_%dframes.png", rows, cols, numFrames))
+		fmt.Sprintf(SelectedMode.Prefix+"_%dx%d_%dframes.png", rows, cols, numFrames))
 
 	f, err = os.Create(savePath)
 	if err != nil {
@@ -110,7 +146,11 @@ func MakeCombinedTexture(saveDir string) {
 	defer f.Close()
 
 	if err := png.Encode(f, sheet); err != nil {
-		log.Panicln("error encoding png:", err)
+		Fatal("error encoding png:", err)
 	}
 	fmt.Println("saved as", savePath)
+}
+func Fatal(err ...any) {
+	fmt.Println(err...)
+	os.Exit(0)
 }
