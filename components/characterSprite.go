@@ -1,12 +1,13 @@
 package c
 
-import rl "github.com/gen2brain/raylib-go/raylib"
+import (
+	"io/fs"
+	"path"
+)
 
-type CharacterSprite struct {
-	SpriteAnimator
-	// sprite sheet containing all the frames for the animation
-	Resource   rl.Texture2D
-	SpritePath string `json:"SpritePath"`
-	// number of frames in the sprite sheet
-	TotalFrames int `json:"TotalFrames"`
+// usage : LoadCharacterSprite("steve","walk")
+func LoadCharacterSprite(character, sprite string, fps int, resolution Vec2,as fs.FS) (BaseSprite, error) {
+	characterPath := path.Join("assets", "characters", character)
+	baseSprite, err := loadBaseSprite(as, characterPath, sprite, fps, resolution)
+	return baseSprite, err
 }

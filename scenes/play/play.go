@@ -4,12 +4,16 @@ import (
 	c "GameFrameworkTM/components"
 	"GameFrameworkTM/engine"
 	"log"
+
+	rl "github.com/gen2brain/raylib-go/raylib"
 )
 
 type Scene struct {
 	// draw to render texture
-	Screen     c.Screen
-	Stage      c.StageBackground
+	Screen c.Screen
+	Stage  c.StageBackground
+	Steve  c.BaseSprite
+	Shadow rl.Texture2D
 	// slice of unloader functions
 	Unloader c.Stack[func()]
 }
@@ -24,6 +28,8 @@ func (scene *Scene) Load(ctx engine.Context) {
 	if err != nil {
 		log.Fatalln("failed to load stage", err)
 	}
+	scene.Shadow = rl.LoadTexture("assets/misc/shadow.png")
+	scene.Steve, err = c.LoadCharacterSprite("steve", "walk", 13, c.V2(128, 128), ctx.Assets)
 	defer scene.Unloader.Add(scene.Stage.Unload)
 }
 
@@ -40,6 +46,8 @@ func (scene *Scene) Update(ctx engine.Context) (unload bool) {
 	scene.Screen.BeginDrawing()
 	// y: 300-288 = 12px
 	scene.Stage.Draw(0, -12)
+	rl.DrawTexture(scene.Shadow, 48, 217, rl.White)
+	scene.Steve.Draw(0, 97)
 	scene.Screen.EndDrawing()
 	return false // if true is returned, Unload is called
 }

@@ -22,6 +22,10 @@ type pair struct {
 
 var pairs []pair
 var Flag_Mode *string
+var Flag_OutputDir *string
+
+// prefix for the filename before the row and column info
+var Flag_Prefix *string
 
 type Mode struct {
 	// name that would be used for the -mode flag
@@ -49,16 +53,23 @@ func init() {
 	TotalModes = fmt.Sprintf("{%s}", TotalModes)
 	// parse -mode flag
 	Flag_Mode = flag.String("mode", "bg", "-mode sprite")
+	Flag_OutputDir = flag.String("o", "placeholder", "-o /path/to/output/directory")
+	Flag_Prefix = flag.String("prefix", "placeholder", "-prefix walk")
 	flag.Parse()
 	// select the mode from the flags
 	for _, mode := range Modes {
 		if mode.name == *Flag_Mode {
 			SelectedMode = mode
-			return
+			break
 		}
 	}
-	fmt.Println("invalid mode, available modes are", TotalModes)
-	os.Exit(0)
+	if *Flag_Prefix != "placeholder" {
+		SelectedMode.Prefix = *Flag_Prefix
+	}
+	if SelectedMode.name == "" {
+		fmt.Println("invalid mode, available modes are", TotalModes)
+		os.Exit(0)
+	}
 }
 
 func main() {
@@ -90,7 +101,11 @@ func main() {
 	}
 	// sort by filename
 	sort.Slice(pairs, func(i, j int) bool { return pairs[i].index < pairs[j].index })
-	MakeCombinedTexture(root)
+	if *Flag_OutputDir != "placeholder" {
+		MakeCombinedTexture(*Flag_OutputDir)
+	} else {
+		MakeCombinedTexture(root)
+	}
 }
 
 // combine all the frames into 1 big square sprite sheet.
