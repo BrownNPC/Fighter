@@ -2,7 +2,9 @@ package play
 
 import (
 	c "GameFrameworkTM/components"
+	"GameFrameworkTM/components/render"
 	"GameFrameworkTM/engine"
+	"fmt"
 	"log"
 
 	rl "github.com/gen2brain/raylib-go/raylib"
@@ -10,10 +12,12 @@ import (
 
 type Scene struct {
 	// draw to render texture
-	Screen c.Screen
-	Stage  c.StageBackground
-	Steve  c.BaseSprite
-	Shadow rl.Texture2D
+	Screen       render.Screen
+	Stage        render.StageBackground
+	Steve        render.BaseSprite
+	Shadow       rl.Texture2D
+	currentFrame int
+	cam          c.Vec2
 	// slice of unloader functions
 	Unloader c.Stack[func()]
 }
@@ -21,15 +25,19 @@ type Scene struct {
 // Load is called once the scene is switched to
 func (scene *Scene) Load(ctx engine.Context) {
 	var err error
-	scene.Screen = c.NewRenderTexture(ctx.VirtualResolution)
+	scene.Screen = render.NewScreen(ctx.VirtualResolution)
 	defer scene.Unloader.Add(scene.Screen.Unload)
 
-	scene.Stage, err = c.LoadStage("stage1", ctx.StageResolution, ctx.Assets)
+	scene.Stage, err = render.LoadStage("stage1", ctx.StageFrameResolution, ctx.VirtualStageSize, ctx.Assets)
 	if err != nil {
 		log.Fatalln("failed to load stage", err)
 	}
+	// center
+	scene.cam.X = scene.Stage.VirtualSize.X / 2
+
 	scene.Shadow = rl.LoadTexture("assets/misc/shadow.png")
-	scene.Steve, err = c.LoadCharacterSprite("steve", "idle", 11, c.V2(256, 256), ctx.Assets)
+	scene.Steve, err = render.LoadCharacterAnimation("steve", "idle", 11, c.V2(256, 256), ctx.Assets)
+	scene.currentFrame = 29
 	defer scene.Unloader.Add(scene.Stage.Unload)
 }
 
@@ -44,10 +52,20 @@ func (scene *Scene) Unload(ctx engine.Context) (nextSceneID string) {
 // update is called every frame
 func (scene *Scene) Update(ctx engine.Context) (unload bool) {
 	scene.Screen.BeginDrawing()
-	// y: 300-288 = 12px
-	scene.Stage.Draw(0, -12)
-	rl.DrawTexture(scene.Shadow, 96, 434, rl.White)
+	rl.ClearBackground(rl.White)
+	if rl.IsKeyDown(rl.KeyD) {
+		scene.cam.X++
+	}
+	if rl.IsKeyDown(rl.KeyA) {
+		scene.cam.X--
+	}
+	scene.cam.X = min(ctx.VirtualStageSize.X, scene.cam.X)
+	scene.cam.X = max(0, scene.cam.X)
+	scene.currentFrame = scene.Stage.GetFrameForCameraX(scene.cam.X)
+
+	scene.Stage.DrawFrame(scene.currentFrame, 0, -600+576)
 	scene.Steve.Draw(0, 97)
 	scene.Screen.EndDrawing()
+	rl.DrawText(fmt.Sprint(scene.currentFrame), 0, 0, 22, rl.White)
 	return false // if true is returned, Unload is called
 }

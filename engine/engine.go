@@ -17,7 +17,10 @@ type Config struct {
 	WindowTitle       string
 	Assets            fs.FS
 	VirtualResolution c.Vec2
-	StageResolution   c.Vec2
+	// Resolution for each pre-rendered stage frame sprite
+	StageFrameResolution c.Vec2
+	// Virtual Stage size that maps camera world pixel coordinates to stage frames.
+	VirtualStageSize c.Vec2
 }
 
 // info to pass to scenes

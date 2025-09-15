@@ -3,7 +3,7 @@
 package frame
 
 // Frame is a number representing a point in time.
-type Frame int
+type Frame = int
 
 // the frame the game currently is on
 var currentFrame Frame
@@ -11,6 +11,11 @@ var currentFrame Frame
 // Now returns the current frame the game is on
 func Now() Frame {
 	return currentFrame
+}
+
+// convert amount of milliseconds into a frame
+func MsToFrame(milliseconds int) Frame {
+	return milliseconds / 16
 }
 
 // Increment the internal frame counter. This must be called once each frame.

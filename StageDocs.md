@@ -25,7 +25,7 @@ tp @p ~ ~ ~ <x angle> 0
 
 
 #### Export as video from flashback mod.
-- Fov:50
+- Fov:60
 - recording must be 59 ticks
 - framerate 20 (so that 20*3s = 60)
 - start tick 0, end tick 59

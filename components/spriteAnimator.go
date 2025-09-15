@@ -1,7 +1,6 @@
 package c
 
 // SpriteAnimator provides a basic ticker that tells you what frame to draw in your animation.
-// This version supports any animation FPS (including >60) and any number of frames.
 type SpriteAnimator struct {
 	currentFrame int
 	TotalFrames  int
@@ -42,9 +41,9 @@ func (a *SpriteAnimator) GetCurrentFrame() int {
 	a.accum += a.animFPS / 60.0
 
 	if a.accum >= 1.0 && a.TotalFrames > 0 {
-		advance := int(a.accum) // how many animation frames to advance now
-		a.accum -= float64(advance)     // remove the consumed whole frames
-		a.currentFrame = (a.currentFrame + advance) % a.TotalFrames
+		advance := a.accum // how many animation frames to advance now
+		a.accum -= advance // remove the consumed whole frames
+		a.currentFrame = (a.currentFrame + int(advance)) % a.TotalFrames
 	}
 
 	return a.currentFrame

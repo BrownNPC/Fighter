@@ -16,10 +16,11 @@ var ASSETS fs.FS
 func main() {
 	rl.SetTraceLogLevel(rl.LogDebug)
 	err := engine.Run(scenes.Registered, engine.Config{
-		WindowTitle:       "Fighter",
-		Assets:            ASSETS,
-		VirtualResolution: c.V2(768, 576),
-		StageResolution:   c.V2(768, 600),
+		WindowTitle:          "Fighter",
+		Assets:               ASSETS,
+		VirtualResolution:    c.V2(768, 576),
+		StageFrameResolution: c.V2(768, 600),
+		VirtualStageSize: c.V2(768+60, 600),
 	})
 	if err != nil {
 		fmt.Println(err)
