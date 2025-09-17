@@ -2,12 +2,13 @@ package engine
 
 import (
 	"GameFrameworkTM/components/input"
+	"fmt"
 
 	rl "github.com/gen2brain/raylib-go/raylib"
 )
 
 // Control provides easy to type aliases for raylib gamepad inputs
-type Control = int32
+type Control int32
 type Direction bool
 
 const (
@@ -20,69 +21,90 @@ const (
 const (
 	None Control = rl.GamepadButtonUnknown
 	// D-Pad
-	Up    = rl.GamepadButtonLeftFaceUp
-	Down  = rl.GamepadButtonLeftFaceDown
-	Left  = rl.GamepadButtonLeftFaceLeft
-	Right = rl.GamepadButtonLeftFaceRight
-	// Light attack
-	Light
-	// Heavy attack
-	Heavy
-	Block
-
-	TotalInputs
+	Up    Control = rl.GamepadButtonLeftFaceUp
+	Down  Control = rl.GamepadButtonLeftFaceDown
+	Left  Control = rl.GamepadButtonLeftFaceLeft
+	Right Control = rl.GamepadButtonLeftFaceRight
+	// Square / X
+	// Attack
+	Attack Control = rl.GamepadButtonRightFaceLeft
+	// Triangle / Y
+	Block Control = rl.GamepadButtonRightFaceUp
 )
 
-// Maps Keyboard,and Gamepad input to virtual input
-var Keymap map[int32]Control
+// Controller input -> raylib Keyboard const
+type Keymap map[Control]int32
+
+var Keymap_Player1, Keymap_Player2 Keymap
+
+// NOTE: this does not account for Left or Right.
+// use checkDirectionalInput for that
+var controlToInput = map[Control]input.Input{
+	Up:     input.Up,
+	Down:   input.Down,
+	None:   input.Neutral,
+	Attack: input.Attack,
+	Block:  input.Block,
+}
 
 func init() {
-	Keymap = map[int32]Control{
-		rl.GamepadButtonLeftFaceUp:    Up,
-		rl.GamepadButtonLeftFaceDown:  Down,
-		rl.GamepadButtonLeftFaceLeft:  Left,
-		rl.GamepadButtonLeftFaceRight: Right,
-	}
+	Keymap_Player1 = map[Control]int32{}
 }
 
 var Player1, Player2 input.InputBuffer
 
 func UpdatePlayer1(facing Direction) {
-	checkGamepad(0, facing)
+	var inp input.Input = input.Neutral
+	inp |= checkInput(Left, false, 0, Keymap_Player1, facing)
+	inp |= checkInput(Right, false, 0, Keymap_Player1, facing)
+	inp |= checkInput(Up, false, 0, Keymap_Player1, facing)
+	inp |= checkInput(Down, false, 0, Keymap_Player1, facing)
+	inp |= checkInput(Attack, true, 0, Keymap_Player1, facing)
+	inp |= checkInput(Block, false, 0, Keymap_Player1, facing)
 }
-func checkGamepad(id int32, facing Direction) input.Input {
-	var inputs []input.Input = make([]input.Input, TotalInputs)
-	if rl.IsGamepadButtonDown(id, Left) {
-		inputs = append(inputs, checkDirectionalInput(Left, facing))
+
+// pressed is whether to check if button is held down, or pressed.
+func checkInput(button Control, pressed bool, padId int32, keyMap Keymap, facing Direction) input.Input {
+	var down bool
+	var keyFunc, gamePadFunc = rl.IsKeyDown, rl.IsGamepadButtonDown
+	// pressed is whether to check if button is held down, or pressed.
+	if pressed {
+		keyFunc = rl.IsKeyPressed
+		gamePadFunc = rl.IsGamepadButtonPressed
 	}
-	if rl.IsGamepadButtonDown(id, Right) {
-		inputs = append(inputs, checkDirectionalInput(Right, facing))
+	if keyFunc(keyMap[button]) {
+		down = true
 	}
-	if rl.IsGamepadButtonDown(id, Up) {
-		inputs = append(inputs, Up)
+	if gamePadFunc(padId, int32(button)) {
+		down = true
 	}
-	if rl.IsGamepadButtonDown(id, Up) {
-		inputs = append(inputs, Up)
+	if down {
+		if button == Left || button == Right {
+			return checkDirectionalInput(button, facing)
+		}
+		if ctrl, ok := controlToInput[button]; ok {
+			return ctrl
+		} else {
+			panic("asked to check a control not found in control map " + fmt.Sprint(button))
+		}
 	}
-	var allInputs = input.INeutral
-	for _, inp := range inputs {
-		allInputs |= inp
-	}
-	return allInputs
+	// OR with 0 is a no-op. INeutral is 0.
+	return input.Neutral
 }
+
 func checkDirectionalInput(button Control, facing Direction) input.Input {
 	switch button {
 	case Right:
 		if facing == DRight {
-			return input.IForward
+			return input.Forward
 		} else {
-			return input.IBack
+			return input.Back
 		}
 	case Left:
 		if facing == DLeft {
-			return input.IForward
+			return input.Forward
 		} else {
-			return input.IBack
+			return input.Back
 		}
 	}
 	panic("invalid button passed")

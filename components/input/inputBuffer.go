@@ -2,7 +2,6 @@ package input
 
 import (
 	c "GameFrameworkTM/components"
-	"GameFrameworkTM/components/frame"
 )
 
 const (
@@ -37,18 +36,24 @@ func (b *InputBuffer) Add(input Input) {
 // CurrentTick offset inside the input buffer back until "limit" frames.
 // NOTE:
 // You must clean the move from the buffer BEFORE it's performed.
-func (b *InputBuffer) CheckSequence(limit frame.Frame, sequence ...Input) bool {
+func (b *InputBuffer) CheckSequence(move Move) bool {
+	sequence := move.Sequence
 	if len(sequence) == 0 {
 		return true
 	}
 	w := len(sequence) - 1
-	for i := range int(limit) {
-		// walk backwards from current frame for maxDuration
+	for i := range int(move.leniency) {
+		// walk backwards from current frame for limit
 		frameInput := b.buf[c.Modulo(b.CurrentTick-i, InputBufferSize)]
 		// if any of the inputs this frame matches with the sequence
-		if frameInput&sequence[w] == sequence[w] {
+		if move.strict {
+			if frameInput == sequence[w] {
+				w--
+			}
+		} else if frameInput.Contains(sequence[w]) {
 			w--
 		}
+
 		if w == -1 {
 			return true
 		}
@@ -58,22 +63,30 @@ func (b *InputBuffer) CheckSequence(limit frame.Frame, sequence ...Input) bool {
 
 // Clear a move from the buffer. Use this to stop a move from being performed more than once.
 // You must clean the move from the buffer BEFORE it's performed, and in the same tick as it's read.
-func (b *InputBuffer) ClearSequence(limit frame.Frame, sequence ...Input) {
+func (b *InputBuffer) ClearSequence(move Move) {
+	sequence := move.Sequence
 	if len(sequence) == 0 {
 		return
 	}
-	limit = min(limit, InputBufferSize)
+	limit := min(int(move.leniency), InputBufferSize)
 
 	w := len(sequence) - 1
-	for i := range limit {
-		idx := c.Modulo(b.CurrentTick-i, InputBufferSize)
-		frameInput := b.buf[idx]
-		if frameInput&sequence[w] == sequence[w] {
-			b.buf[idx] = frameInput &^ sequence[w]
-			w--
-			if w < 0 {
-				return
+	for i := range int(limit) {
+		i := c.Modulo(b.CurrentTick-i, InputBufferSize)
+		// walk backwards from current frame for limit
+		frameInput := b.buf[i]
+		// if any of the inputs this frame matches with the sequence
+		if move.strict {
+			if frameInput == sequence[w] {
+				b.buf[i] = Neutral
+				w--
 			}
+		} else if frameInput.Contains(sequence[w]) {
+			b.buf[i] = frameInput &^ sequence[w]
+			w--
+		}
+		if w == -1 {
+			return
 		}
 	}
 }
@@ -81,4 +94,9 @@ func (b *InputBuffer) ClearSequence(limit frame.Frame, sequence ...Input) {
 // Get the latest input
 func (b *InputBuffer) Latest() Input {
 	return b.buf[b.CurrentTick]
+}
+
+// IsReleased checks whether the input was released this frame
+func (b *InputBuffer) IsReleased(inp Input) {
+	b.CheckSequence(NewMove(false, 2, inp, Neutral))
 }
