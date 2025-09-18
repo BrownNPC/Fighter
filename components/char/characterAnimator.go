@@ -3,6 +3,7 @@ package char
 import (
 	c "GameFrameworkTM/components"
 	"GameFrameworkTM/components/render"
+	"GameFrameworkTM/engine"
 	"io/fs"
 	"log/slog"
 )
@@ -49,11 +50,11 @@ func (a *CharacterAnimator) Switch(to AnimationType) {
 }
 
 // Draw the current frame of the animation
-func (a *CharacterAnimator) Draw(x, y float32, facing Direction) {
+func (a *CharacterAnimator) Draw(x, y float32, facing engine.Direction) {
 	var anim render.BaseSprite = a.animations[a.ActiveAnimation]
-	if facing == Left {
+	if facing == engine.DLeft {
 		anim.DrawFlipped(x, y)
-	}else{
-		anim.Draw(x,y)
+	} else {
+		anim.Draw(x, y)
 	}
 }

@@ -61,10 +61,10 @@ func (scene *Scene) Update(ctx *engine.Context) (unload bool) {
 		scene.cam.X--
 	}
 	haduken := input.MoveGroup{
-		input.NewMove(true, 10, input.Down, input.Down|input.Forward, input.Forward, input.Attack),
+		input.NewMove(true, 12, input.Down, input.Down|input.Forward, input.Forward, input.Attack),
 		input.NewMove(true, 10, input.Down, input.Down|input.Forward, input.Forward|input.Attack),
 	}
-	if haduken.Check(&engine.Player1) {
+	if haduken.Check(&engine.Player2) {
 		fmt.Println("HADUKEN")
 	}
 	scene.cam.X = min(ctx.VirtualStageSize.X, scene.cam.X)

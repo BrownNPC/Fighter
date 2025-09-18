@@ -60,8 +60,8 @@ func init() {
 		Down:   rl.KeyK,
 		Left:   rl.KeyJ,
 		Right:  rl.KeyL,
-		Block:  rl.KeyEqual,
-		Attack: rl.KeyMinus,
+		Attack: rl.KeyPeriod,
+		Block:  rl.KeySlash,
 	}
 }
 
