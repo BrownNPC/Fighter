@@ -2,6 +2,7 @@ package play
 
 import (
 	c "GameFrameworkTM/components"
+	"GameFrameworkTM/components/input"
 	"GameFrameworkTM/components/render"
 	"GameFrameworkTM/engine"
 	"fmt"
@@ -23,7 +24,7 @@ type Scene struct {
 }
 
 // Load is called once the scene is switched to
-func (scene *Scene) Load(ctx engine.Context) {
+func (scene *Scene) Load(ctx *engine.Context) {
 	var err error
 	scene.Screen = render.NewScreen(ctx.VirtualResolution)
 	defer scene.Unloader.Add(scene.Screen.Unload)
@@ -42,7 +43,7 @@ func (scene *Scene) Load(ctx engine.Context) {
 }
 
 // called after Update returns true
-func (scene *Scene) Unload(ctx engine.Context) (nextSceneID string) {
+func (scene *Scene) Unload(ctx *engine.Context) (nextSceneID string) {
 	for _, unloadFunc := range scene.Unloader.Items {
 		unloadFunc()
 	}
@@ -50,7 +51,7 @@ func (scene *Scene) Unload(ctx engine.Context) (nextSceneID string) {
 }
 
 // update is called every frame
-func (scene *Scene) Update(ctx engine.Context) (unload bool) {
+func (scene *Scene) Update(ctx *engine.Context) (unload bool) {
 	scene.Screen.BeginDrawing()
 	rl.ClearBackground(rl.White)
 	if rl.IsKeyDown(rl.KeyD) {
@@ -58,6 +59,13 @@ func (scene *Scene) Update(ctx engine.Context) (unload bool) {
 	}
 	if rl.IsKeyDown(rl.KeyA) {
 		scene.cam.X--
+	}
+	haduken := input.MoveGroup{
+		input.NewMove(true, 10, input.Down, input.Down|input.Forward, input.Forward, input.Attack),
+		input.NewMove(true, 10, input.Down, input.Down|input.Forward, input.Forward|input.Attack),
+	}
+	if haduken.Check(&engine.Player1) {
+		fmt.Println("HADUKEN")
 	}
 	scene.cam.X = min(ctx.VirtualStageSize.X, scene.cam.X)
 	scene.cam.X = max(0, scene.cam.X)

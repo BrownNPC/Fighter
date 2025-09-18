@@ -28,13 +28,14 @@ type Config struct {
 type Context struct {
 	IsWeb bool
 	Config
+	Player1Facing, Player2Facing Direction
 }
 
 // a scene must implement these methods
 type scene interface {
-	Load(Context)                        // called when this Scene is switched to
-	Update(Context) (unload bool)        // called every frame
-	Unload(Context) (nextSceneID string) // called after Update returns true
+	Load(*Context)                        // called when this Scene is switched to
+	Update(*Context) (unload bool)        // called every frame
+	Unload(*Context) (nextSceneID string) // called after Update returns true
 }
 
 // map from string id to a Scene
@@ -43,7 +44,12 @@ type Scenes map[string]scene
 func Run(scenes Scenes, cfg Config) error {
 	ActiveSceneId := "start" // look for a scene named start as entry-point
 	ActiveScene, ok := scenes[ActiveSceneId]
-	ctx := Context{Config: cfg, IsWeb: runtime.GOOS == "js"} // info to pass to scenes.
+	ctx := &Context{
+		Config:        cfg,
+		IsWeb:         runtime.GOOS == "js",
+		Player1Facing: DRight,
+		Player2Facing: DRight,
+	} // info to pass to scenes.
 	if !ok {
 		return errors.New(`Cannot start. There must be a scene with id "start" that is the entry-point`)
 	} else if ActiveScene == nil {
@@ -73,6 +79,8 @@ func Run(scenes Scenes, cfg Config) error {
 		rl.ClearBackground(rl.Black)
 		// update frame package
 		frame.Increment()
+		// upadate input buffer
+		UpdatePlayers(ctx.Player1Facing, ctx.Player2Facing)
 		var unloadActiveScene bool = ActiveScene.Update(ctx) // -------UPDATE SCENE---------
 		rl.EndDrawing()
 		if unloadActiveScene {
@@ -106,35 +114,6 @@ func Run(scenes Scenes, cfg Config) error {
 	return nil
 }
 
-func UpdateAndDraw(ActiveScene scene, ctx Context, scenes Scenes, ActiveSceneId string) error {
-	if rl.IsKeyPressed(rl.KeyF11) {
-		rl.ToggleBorderlessWindowed()
-	}
-	rl.BeginDrawing()
-	rl.ClearBackground(rl.Black)
-	// -------UPDATE SCENE---------
-	var unloadActiveScene bool = ActiveScene.Update(ctx)
-	rl.EndDrawing()
-	if unloadActiveScene {
-		// -------UNLOAD SCENE-------
-		var nextSceneId string = ActiveScene.Unload(ctx) // unload returns nextSceneId
-		var nextScene, ok = scenes[nextSceneId]
-		// ------SWITCH SCENE------
-		if ok && nextScene != nil {
-			ActiveSceneId = nextSceneId
-			ActiveScene = nextScene
-			ActiveScene.Load(ctx)
-			return nil
-		}
-		//-----ERROR HANDLING------
-		if !ok {
-			return fmt.Errorf(`There is no scene with id "%s", tried switching from scene "%s"`, nextSceneId, ActiveSceneId)
-		} else if nextScene == nil {
-			return fmt.Errorf(`scene with id "%s" is nil, tried switching from scene "%s"`, nextSceneId, ActiveSceneId)
-		}
-	}
-	return nil
-}
 func centerWindow() {
 	WindowWidth, WindowHeight := rl.GetScreenWidth(), rl.GetScreenHeight()
 	monitorWidth := rl.GetMonitorWidth(rl.GetCurrentMonitor())

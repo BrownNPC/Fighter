@@ -3,7 +3,6 @@ package engine
 import (
 	"GameFrameworkTM/components/input"
 	"fmt"
-
 	rl "github.com/gen2brain/raylib-go/raylib"
 )
 
@@ -48,19 +47,45 @@ var controlToInput = map[Control]input.Input{
 }
 
 func init() {
-	Keymap_Player1 = map[Control]int32{}
+	Keymap_Player1 = map[Control]int32{
+		Up:     rl.KeyW,
+		Down:   rl.KeyS,
+		Left:   rl.KeyA,
+		Right:  rl.KeyD,
+		Attack: rl.KeyC,
+		Block:  rl.KeyV,
+	}
+	Keymap_Player2 = map[Control]int32{
+		Up:     rl.KeyI,
+		Down:   rl.KeyK,
+		Left:   rl.KeyJ,
+		Right:  rl.KeyL,
+		Block:  rl.KeyEqual,
+		Attack: rl.KeyMinus,
+	}
 }
 
 var Player1, Player2 input.InputBuffer
 
-func UpdatePlayer1(facing Direction) {
+func UpdatePlayers(facingP1, facingP2 Direction) {
 	var inp input.Input = input.Neutral
-	inp |= checkInput(Left, false, 0, Keymap_Player1, facing)
-	inp |= checkInput(Right, false, 0, Keymap_Player1, facing)
-	inp |= checkInput(Up, false, 0, Keymap_Player1, facing)
-	inp |= checkInput(Down, false, 0, Keymap_Player1, facing)
-	inp |= checkInput(Attack, true, 0, Keymap_Player1, facing)
-	inp |= checkInput(Block, false, 0, Keymap_Player1, facing)
+	// Player 1
+	inp |= checkInput(Left, false, 0, Keymap_Player1, facingP1)
+	inp |= checkInput(Right, false, 0, Keymap_Player1, facingP1)
+	inp |= checkInput(Up, false, 0, Keymap_Player1, facingP1)
+	inp |= checkInput(Down, false, 0, Keymap_Player1, facingP1)
+	inp |= checkInput(Attack, true, 0, Keymap_Player1, facingP1)
+	inp |= checkInput(Block, false, 0, Keymap_Player1, facingP1)
+	Player1.Add(inp)
+
+	inp = input.Neutral
+	inp |= checkInput(Left, false, 1, Keymap_Player2, facingP2)
+	inp |= checkInput(Right, false, 1, Keymap_Player2, facingP2)
+	inp |= checkInput(Up, false, 1, Keymap_Player2, facingP2)
+	inp |= checkInput(Down, false, 1, Keymap_Player2, facingP2)
+	inp |= checkInput(Attack, true, 1, Keymap_Player2, facingP2)
+	inp |= checkInput(Block, false, 1, Keymap_Player2, facingP2)
+	Player2.Add(inp)
 }
 
 // pressed is whether to check if button is held down, or pressed.
@@ -98,13 +123,13 @@ func checkDirectionalInput(button Control, facing Direction) input.Input {
 		if facing == DRight {
 			return input.Forward
 		} else {
-			return input.Back
+			return input.Backward
 		}
 	case Left:
 		if facing == DLeft {
 			return input.Forward
 		} else {
-			return input.Back
+			return input.Backward
 		}
 	}
 	panic("invalid button passed")

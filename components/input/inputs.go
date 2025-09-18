@@ -7,7 +7,7 @@ const (
 	Up Input = 1 << iota
 	Down
 	Forward
-	Back
+	Backward
 	Attack
 	Block
 )
